@@ -42,15 +42,17 @@
       },
       "add_sensor": {
         "title": "LaCrosse-Sensor manuell hinzufügen",
-        "description": "Füge einen physischen LaCrosse-Sensor über seine Funk-ID hinzu.",
+        "description": "Füge einen physischen LaCrosse-Sensor über seine Funk-ID hinzu und lege fest, ob er Luftfeuchtigkeit unterstützt.",
         "data": {
           "sensor_name": "Gerätename",
           "radio_id": "LaCrosse-Funk-ID",
-          "expire_after": "Nicht verfügbar nach"
+          "expire_after": "Nicht verfügbar nach",
+          "has_humidity": "Luftfeuchtigkeit unterstützt"
         },
         "data_description": {
           "radio_id": "Die vom Jeelink empfangene ID dieses Sensors.",
-          "expire_after": "Sekunden ohne Funkpaket, nach denen das Gerät als nicht verfügbar gilt."
+          "expire_after": "Sekunden ohne Funkpaket, nach denen das Gerät als nicht verfügbar gilt.",
+          "has_humidity": "Aktivieren, wenn der Sensor Temperatur und Luftfeuchtigkeit misst. Deaktivieren bei reinen Temperatursensoren. Diese Auswahl wird nicht automatisch überschrieben."
         }
       },
       "scan_sensor": {
@@ -62,13 +64,15 @@
       },
       "add_discovered_sensor": {
         "title": "Gefundenen Sensor hinzufügen",
-        "description": "Funk-ID {radio_id} wurde gefunden. Aktuelle Werte: {temperature} °C / {humidity} %. Vergib jetzt einen Namen für das Gerät.",
+        "description": "Funk-ID {radio_id} wurde gefunden. Aktuelle Werte: {temperature} °C / {humidity} %. Vergib jetzt einen Namen und prüfe, ob der Sensor Luftfeuchtigkeit unterstützt.",
         "data": {
           "sensor_name": "Gerätename",
-          "expire_after": "Nicht verfügbar nach"
+          "expire_after": "Nicht verfügbar nach",
+          "has_humidity": "Luftfeuchtigkeit unterstützt"
         },
         "data_description": {
-          "expire_after": "Sekunden ohne Funkpaket, nach denen das Gerät als nicht verfügbar gilt."
+          "expire_after": "Sekunden ohne Funkpaket, nach denen das Gerät als nicht verfügbar gilt.",
+          "has_humidity": "Die Vorauswahl basiert auf dem zuletzt empfangenen Funkpaket. Bitte prüfe sie anhand des Sensormodells. Die bestätigte Auswahl bleibt dauerhaft erhalten."
         }
       },
       "replace_battery": {
