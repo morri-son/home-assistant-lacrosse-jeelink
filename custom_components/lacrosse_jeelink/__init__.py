@@ -27,6 +27,9 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+CONF_HUMIDITY_MODE = "humidity_mode"
+HUMIDITY_MODE_MANUAL = "manual"
+
 
 @dataclass
 class LaCrosseRuntimeData:
@@ -35,7 +38,9 @@ class LaCrosseRuntimeData:
     lacrosse: pylacrosse.LaCrosse
 
     # Includes configured and unconfigured radio sensors.
-    discovered_sensors: dict[int, dict[str, Any]] = field(default_factory=dict)
+    discovered_sensors: dict[int, dict[str, Any]] = field(
+        default_factory=dict
+    )
 
 
 LaCrosseConfigEntry = ConfigEntry[LaCrosseRuntimeData]
@@ -58,16 +63,22 @@ async def async_setup_entry(
     lacrosse = pylacrosse.LaCrosse(device, baud)
     discovered_sensors: dict[int, dict[str, Any]] = {}
 
-    # Prevent duplicate restoration tasks while radio packets arrive.
     humidity_restorations_in_progress: set[str] = set()
 
     async def restore_humidity_sensor(sensor_key: str) -> None:
-        """Restore humidity support for an existing sensor."""
+        """Restore humidity for a legacy sensor when valid data arrives."""
         try:
             sensors = dict(entry.options.get(CONF_SENSORS, {}))
             sensor_config = sensors.get(sensor_key)
 
             if sensor_config is None:
+                return
+
+            # Never override an explicit user choice.
+            if (
+                sensor_config.get(CONF_HUMIDITY_MODE)
+                == HUMIDITY_MODE_MANUAL
+            ):
                 return
 
             if sensor_config.get(CONF_HAS_HUMIDITY) is not False:
@@ -77,11 +88,14 @@ async def async_setup_entry(
             updated_sensor_config[CONF_HAS_HUMIDITY] = True
             sensors[sensor_key] = updated_sensor_config
 
-            new_options = {**entry.options, CONF_SENSORS: sensors}
+            new_options = {
+                **entry.options,
+                CONF_SENSORS: sensors,
+            }
 
             _LOGGER.info(
-                "Valid humidity detected for LaCrosse sensor %s; "
-                "restoring humidity support",
+                "Restoring humidity support for legacy LaCrosse "
+                "sensor %s after receiving valid humidity",
                 sensor_key,
             )
 
@@ -89,7 +103,9 @@ async def async_setup_entry(
                 entry,
                 options=new_options,
             )
+
             await hass.config_entries.async_reload(entry.entry_id)
+
         finally:
             humidity_restorations_in_progress.discard(sensor_key)
 
@@ -97,9 +113,8 @@ async def async_setup_entry(
         sensor_id: int,
         humidity: int,
     ) -> None:
-        """Restore humidity support when valid humidity is received."""
+        """Restore legacy humidity support when valid data is received."""
         if not _has_valid_humidity(humidity):
-            # Never remove humidity support based on a single packet.
             return
 
         configured_sensors = entry.options.get(CONF_SENSORS, {})
@@ -108,6 +123,13 @@ async def async_setup_entry(
             if int(sensor_config[CONF_RADIO_ID]) != sensor_id:
                 continue
 
+            # A manually configured capability is authoritative.
+            if (
+                sensor_config.get(CONF_HUMIDITY_MODE)
+                == HUMIDITY_MODE_MANUAL
+            ):
+                return
+
             if sensor_config.get(CONF_HAS_HUMIDITY) is not False:
                 return
 
@@ -115,7 +137,10 @@ async def async_setup_entry(
                 return
 
             humidity_restorations_in_progress.add(sensor_key)
-            hass.async_create_task(restore_humidity_sensor(sensor_key))
+
+            hass.async_create_task(
+                restore_humidity_sensor(sensor_key)
+            )
             return
 
     def update_discovered_sensor(
@@ -125,11 +150,11 @@ async def async_setup_entry(
         low_battery: bool,
         new_battery: bool,
     ) -> None:
-        """Update discovery while retaining the last new-battery event."""
+        """Update discovery and retain the latest new-battery event."""
         now = datetime.now(timezone.utc)
         previous = discovered_sensors.get(sensor_id)
 
-        # Normal radio packets must not erase a recent new-battery event.
+        # Normal packets must not erase a new-battery event.
         last_new_battery_seen = (
             now
             if new_battery
@@ -181,8 +206,9 @@ async def async_setup_entry(
     except Exception as err:
         try:
             await hass.async_add_executor_job(lacrosse.close)
-        except Exception:  # pragma: no cover - best effort cleanup
+        except Exception:
             pass
+
         raise ConfigEntryNotReady(
             f"Unable to open LaCrosse Jeelink on {device} at {baud} baud"
         ) from err
@@ -193,6 +219,7 @@ async def async_setup_entry(
     )
 
     device_registry = dr.async_get(hass)
+
     device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, entry.entry_id)},
@@ -205,6 +232,7 @@ async def async_setup_entry(
         entry,
         PLATFORMS,
     )
+
     return True
 
 
@@ -213,6 +241,7 @@ async def async_unload_entry(
     entry: LaCrosseConfigEntry,
 ) -> bool:
     """Unload a LaCrosse Jeelink config entry."""
+
     unload_ok = await hass.config_entries.async_unload_platforms(
         entry,
         PLATFORMS,
@@ -223,11 +252,14 @@ async def async_unload_entry(
             entry.entry_id,
             None,
         )
+
         try:
             await hass.async_add_executor_job(
                 entry.runtime_data.lacrosse.close
             )
         except Exception:
-            _LOGGER.exception("Error while closing LaCrosse Jeelink")
+            _LOGGER.exception(
+                "Error while closing LaCrosse Jeelink"
+            )
 
     return unload_ok
