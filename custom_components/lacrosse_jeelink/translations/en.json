@@ -42,15 +42,17 @@
       },
       "add_sensor": {
         "title": "Add LaCrosse sensor manually",
-        "description": "Add a physical LaCrosse sensor using its radio ID.",
+        "description": "Add a physical LaCrosse sensor using its radio ID and specify whether it supports humidity.",
         "data": {
           "sensor_name": "Device name",
           "radio_id": "LaCrosse radio ID",
-          "expire_after": "Unavailable after"
+          "expire_after": "Unavailable after",
+          "has_humidity": "Humidity supported"
         },
         "data_description": {
           "radio_id": "The ID received by Jeelink for this sensor.",
-          "expire_after": "Seconds without a packet before the device is marked unavailable."
+          "expire_after": "Seconds without a packet before the device is marked unavailable.",
+          "has_humidity": "Enable for sensors measuring both temperature and humidity. Disable for temperature-only sensors. This selection will not be overridden automatically."
         }
       },
       "scan_sensor": {
@@ -62,13 +64,15 @@
       },
       "add_discovered_sensor": {
         "title": "Add discovered sensor",
-        "description": "Radio ID {radio_id} was discovered. Current values: {temperature} °C / {humidity} %. Enter a name for the device.",
+        "description": "Radio ID {radio_id} was discovered. Current values: {temperature} °C / {humidity} %. Enter a name and verify whether the sensor supports humidity.",
         "data": {
           "sensor_name": "Device name",
-          "expire_after": "Unavailable after"
+          "expire_after": "Unavailable after",
+          "has_humidity": "Humidity supported"
         },
         "data_description": {
-          "expire_after": "Seconds without a packet before the device is marked unavailable."
+          "expire_after": "Seconds without a packet before the device is marked unavailable.",
+          "has_humidity": "The suggested setting is based on the most recently received packet. Please verify it against the sensor model. Your confirmed selection will be preserved."
         }
       },
       "replace_battery": {
