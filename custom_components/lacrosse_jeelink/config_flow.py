@@ -34,6 +34,10 @@ from .const import (
 )
 
 
+CONF_HUMIDITY_MODE = "humidity_mode"
+HUMIDITY_MODE_MANUAL = "manual"
+
+
 def _has_valid_humidity(humidity: int | None) -> bool:
     """Return whether a received humidity value is valid."""
     return humidity is not None and 0 <= humidity <= 100
@@ -205,6 +209,7 @@ class LaCrosseJeelinkOptionsFlow(OptionsFlowWithReload):
             name = user_input[CONF_SENSOR_NAME].strip()
             radio_id = int(user_input[CONF_RADIO_ID])
             expire_after = int(user_input[CONF_EXPIRE_AFTER])
+            has_humidity = bool(user_input[CONF_HAS_HUMIDITY])
 
             sensor_key = slugify(name)
 
@@ -227,23 +232,12 @@ class LaCrosseJeelinkOptionsFlow(OptionsFlowWithReload):
                     )
                 )
 
-                # If the sensor has already been seen by discovery,
-                # use the received humidity value to determine whether
-                # it supports humidity. If it has not been seen yet,
-                # default to True for backwards compatibility.
-                has_humidity = (
-                    _has_valid_humidity(
-                        discovered.get("humidity")
-                    )
-                    if discovered is not None
-                    else True
-                )
-
                 sensors[sensor_key] = {
                     "name": name,
                     CONF_RADIO_ID: radio_id,
                     CONF_EXPIRE_AFTER: expire_after,
                     CONF_HAS_HUMIDITY: has_humidity,
+                    CONF_HUMIDITY_MODE: HUMIDITY_MODE_MANUAL,
                 }
 
                 return self.async_create_entry(
@@ -264,6 +258,10 @@ class LaCrosseJeelinkOptionsFlow(OptionsFlowWithReload):
                         mode=NumberSelectorMode.BOX,
                     )
                 ),
+                vol.Required(
+                    CONF_HAS_HUMIDITY,
+                    default=True,
+                ): bool,
                 vol.Required(
                     CONF_EXPIRE_AFTER,
                     default=DEFAULT_EXPIRE_AFTER,
@@ -403,11 +401,12 @@ class LaCrosseJeelinkOptionsFlow(OptionsFlowWithReload):
         )
 
         humidity = discovered.get("humidity")
-        has_humidity = _has_valid_humidity(humidity)
+        suggested_humidity = _has_valid_humidity(humidity)
 
         if user_input is not None:
             name = user_input[CONF_SENSOR_NAME].strip()
             expire_after = int(user_input[CONF_EXPIRE_AFTER])
+            has_humidity = bool(user_input[CONF_HAS_HUMIDITY])
 
             sensor_key = slugify(name)
 
@@ -429,6 +428,7 @@ class LaCrosseJeelinkOptionsFlow(OptionsFlowWithReload):
                     CONF_RADIO_ID: radio_id,
                     CONF_EXPIRE_AFTER: expire_after,
                     CONF_HAS_HUMIDITY: has_humidity,
+                    CONF_HUMIDITY_MODE: HUMIDITY_MODE_MANUAL,
                 }
 
                 return self.async_create_entry(
@@ -449,7 +449,7 @@ class LaCrosseJeelinkOptionsFlow(OptionsFlowWithReload):
             ),
             "humidity": (
                 str(humidity)
-                if has_humidity
+                if suggested_humidity
                 else "not supported"
             ),
         }
@@ -457,6 +457,10 @@ class LaCrosseJeelinkOptionsFlow(OptionsFlowWithReload):
         schema = vol.Schema(
             {
                 vol.Required(CONF_SENSOR_NAME): str,
+                vol.Required(
+                    CONF_HAS_HUMIDITY,
+                    default=suggested_humidity,
+                ): bool,
                 vol.Required(
                     CONF_EXPIRE_AFTER,
                     default=DEFAULT_EXPIRE_AFTER,
