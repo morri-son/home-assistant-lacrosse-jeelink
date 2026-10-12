@@ -1,3 +1,4 @@
+
 """LaCrosse Jeelink integration."""
 
 from __future__ import annotations
@@ -13,7 +14,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
 
 from .const import (
     CONF_BAUD,
@@ -58,64 +58,64 @@ async def async_setup_entry(
     lacrosse = pylacrosse.LaCrosse(device, baud)
     discovered_sensors: dict[int, dict[str, Any]] = {}
 
-    # Prevent duplicate migration tasks while radio packets arrive.
-    humidity_migrations_in_progress: set[str] = set()
+    # Prevent duplicate restoration tasks while radio packets arrive.
+    humidity_restorations_in_progress: set[str] = set()
 
-    async def migrate_temperature_only_sensor(sensor_key: str) -> None:
-        """Migrate an existing sensor to temperature-only."""
+    async def restore_humidity_sensor(sensor_key: str) -> None:
+        """Restore humidity support for an existing sensor."""
         try:
             sensors = dict(entry.options.get(CONF_SENSORS, {}))
             sensor_config = sensors.get(sensor_key)
+
             if sensor_config is None:
                 return
-            if sensor_config.get(CONF_HAS_HUMIDITY) is False:
+
+            if sensor_config.get(CONF_HAS_HUMIDITY) is not False:
                 return
 
             updated_sensor_config = dict(sensor_config)
-            updated_sensor_config[CONF_HAS_HUMIDITY] = False
+            updated_sensor_config[CONF_HAS_HUMIDITY] = True
             sensors[sensor_key] = updated_sensor_config
 
             new_options = {**entry.options, CONF_SENSORS: sensors}
-            entity_registry = er.async_get(hass)
-            humidity_unique_id = f"{entry.entry_id}_{sensor_key}_humidity"
-            humidity_entity_id = entity_registry.async_get_entity_id(
-                "sensor", DOMAIN, humidity_unique_id
-            )
-
-            if humidity_entity_id is not None:
-                _LOGGER.info(
-                    "Removing unsupported humidity entity %s for LaCrosse sensor %s",
-                    humidity_entity_id,
-                    sensor_key,
-                )
-                entity_registry.async_remove(humidity_entity_id)
 
             _LOGGER.info(
-                "Detected LaCrosse sensor %s as temperature-only; "
-                "disabling humidity support",
+                "Valid humidity detected for LaCrosse sensor %s; "
+                "restoring humidity support",
                 sensor_key,
             )
-            hass.config_entries.async_update_entry(entry, options=new_options)
+
+            hass.config_entries.async_update_entry(
+                entry,
+                options=new_options,
+            )
             await hass.config_entries.async_reload(entry.entry_id)
         finally:
-            humidity_migrations_in_progress.discard(sensor_key)
+            humidity_restorations_in_progress.discard(sensor_key)
 
-    def check_existing_sensor_capabilities(sensor_id: int, humidity: int) -> None:
-        """Check whether an existing sensor is temperature-only."""
-        if _has_valid_humidity(humidity):
+    def check_existing_sensor_capabilities(
+        sensor_id: int,
+        humidity: int,
+    ) -> None:
+        """Restore humidity support when valid humidity is received."""
+        if not _has_valid_humidity(humidity):
+            # Never remove humidity support based on a single packet.
             return
 
         configured_sensors = entry.options.get(CONF_SENSORS, {})
+
         for sensor_key, sensor_config in configured_sensors.items():
             if int(sensor_config[CONF_RADIO_ID]) != sensor_id:
                 continue
-            if sensor_config.get(CONF_HAS_HUMIDITY) is False:
-                return
-            if sensor_key in humidity_migrations_in_progress:
+
+            if sensor_config.get(CONF_HAS_HUMIDITY) is not False:
                 return
 
-            humidity_migrations_in_progress.add(sensor_key)
-            hass.async_create_task(migrate_temperature_only_sensor(sensor_key))
+            if sensor_key in humidity_restorations_in_progress:
+                return
+
+            humidity_restorations_in_progress.add(sensor_key)
+            hass.async_create_task(restore_humidity_sensor(sensor_key))
             return
 
     def update_discovered_sensor(
@@ -131,9 +131,12 @@ async def async_setup_entry(
 
         # Normal radio packets must not erase a recent new-battery event.
         last_new_battery_seen = (
-            now if new_battery else (
+            now
+            if new_battery
+            else (
                 previous.get("last_new_battery_seen")
-                if previous is not None else None
+                if previous is not None
+                else None
             )
         )
 
@@ -198,7 +201,10 @@ async def async_setup_entry(
         model="USB radio gateway",
     )
 
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(
+        entry,
+        PLATFORMS,
+    )
     return True
 
 
@@ -208,15 +214,19 @@ async def async_unload_entry(
 ) -> bool:
     """Unload a LaCrosse Jeelink config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(
-        entry, PLATFORMS
+        entry,
+        PLATFORMS,
     )
 
     if unload_ok:
         hass.data.get("lacrosse_jeelink_device_data", {}).pop(
-            entry.entry_id, None
+            entry.entry_id,
+            None,
         )
         try:
-            await hass.async_add_executor_job(entry.runtime_data.lacrosse.close)
+            await hass.async_add_executor_job(
+                entry.runtime_data.lacrosse.close
+            )
         except Exception:
             _LOGGER.exception("Error while closing LaCrosse Jeelink")
 
