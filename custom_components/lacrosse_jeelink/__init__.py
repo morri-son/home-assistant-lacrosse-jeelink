@@ -24,11 +24,14 @@ from .const import (
     DOMAIN,
     PLATFORMS,
 )
+from .diagnostic_receiver import DiagnosticLaCrosse
 
 _LOGGER = logging.getLogger(__name__)
 
 CONF_HUMIDITY_MODE = "humidity_mode"
 HUMIDITY_MODE_MANUAL = "manual"
+
+CONF_RAW_TELEGRAM_DIAGNOSTICS = "raw_telegram_diagnostics"
 
 
 @dataclass
@@ -60,7 +63,33 @@ async def async_setup_entry(
     device = entry.data["device"]
     baud = entry.data.get(CONF_BAUD, DEFAULT_BAUD)
 
-    lacrosse = pylacrosse.LaCrosse(device, baud)
+    raw_diagnostics_enabled = (
+        entry.options.get(
+            CONF_RAW_TELEGRAM_DIAGNOSTICS,
+            False,
+        )
+        is True
+    )
+
+    receiver_class = (
+        DiagnosticLaCrosse
+        if raw_diagnostics_enabled
+        else pylacrosse.LaCrosse
+    )
+
+    lacrosse = receiver_class(device, baud)
+
+    if raw_diagnostics_enabled:
+        _LOGGER.warning(
+            "LaCrosse Jeelink raw telegram diagnostics enabled "
+            "for %s. Raw serial data will be logged at DEBUG level.",
+            device,
+        )
+    else:
+        _LOGGER.debug(
+            "LaCrosse Jeelink using standard pylacrosse receiver"
+        )
+
     discovered_sensors: dict[int, dict[str, Any]] = {}
 
     humidity_restorations_in_progress: set[str] = set()
