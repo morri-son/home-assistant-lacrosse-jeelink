@@ -1,0 +1,147 @@
+
+{
+  "title": "LaCrosse Jeelink",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Jeelink",
+        "description": "Configure the serial connection to your Jeelink. After setup, open Configure on the integration to add LaCrosse sensors.",
+        "data": {
+          "device": "Serial device",
+          "baud": "Baud rate"
+        },
+        "data_description": {
+          "device": "Usually /dev/ttyUSB0. Prefer a stable /dev/serial/by-id/... path when available.",
+          "baud": "Most Jeelink setups use 57600 baud."
+        }
+      },
+      "reconfigure": {
+        "title": "Change serial connection",
+        "data": {
+          "device": "Serial device",
+          "baud": "Baud rate"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This serial device is already configured.",
+      "unique_id_mismatch": "The selected device does not match this configuration entry.",
+      "reconfigure_successful": "The serial connection was updated successfully."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Manage LaCrosse sensors",
+        "menu_options": {
+          "add_sensor": "Add sensor manually",
+          "scan_sensor": "Search for sensors",
+          "replace_battery": "Battery replacement / Reassign radio ID",
+          "remove_sensor": "Remove sensor",
+          "raw_telegram_diagnostics": "Raw telegram diagnostics"
+        }
+      },
+      "raw_telegram_diagnostics": {
+        "title": "Raw telegram diagnostics",
+        "description": "Enable diagnostics to inspect raw radio telegrams received by the JeeLink in the Home Assistant logs. Raw data is only logged when DEBUG logging is enabled. This feature helps investigate unknown or incorrect radio IDs.",
+        "data": {
+          "raw_telegram_diagnostics": "Enable raw telegram diagnostics"
+        },
+        "data_description": {
+          "raw_telegram_diagnostics": "Disabled by default. Changing this setting reloads the integration. To display raw telegrams, DEBUG logging must also be enabled for custom_components.lacrosse_jeelink.diagnostic_receiver."
+        }
+      },
+      "add_sensor": {
+        "title": "Add LaCrosse sensor manually",
+        "description": "Add a physical LaCrosse sensor using its radio ID and specify whether it supports humidity.",
+        "data": {
+          "sensor_name": "Device name",
+          "radio_id": "LaCrosse radio ID",
+          "expire_after": "Unavailable after",
+          "has_humidity": "Humidity supported"
+        },
+        "data_description": {
+          "radio_id": "The ID received by Jeelink for this sensor.",
+          "expire_after": "Seconds without a packet before the device is marked unavailable.",
+          "has_humidity": "Enable for sensors measuring both temperature and humidity. Disable for temperature-only sensors. This selection will not be overridden automatically."
+        }
+      },
+      "scan_sensor": {
+        "title": "Search for LaCrosse sensors",
+        "description": "All LaCrosse sensors received by the Jeelink since the integration was started are shown here. Select a new sensor.",
+        "data": {
+          "discovered_sensor": "Discovered sensor"
+        }
+      },
+      "add_discovered_sensor": {
+        "title": "Add discovered sensor",
+        "description": "Radio ID {radio_id} was discovered. Current values: {temperature} °C / {humidity} %. Enter a name and verify whether the sensor supports humidity.",
+        "data": {
+          "sensor_name": "Device name",
+          "expire_after": "Unavailable after",
+          "has_humidity": "Humidity supported"
+        },
+        "data_description": {
+          "expire_after": "Seconds without a packet before the device is marked unavailable.",
+          "has_humidity": "The suggested setting is based on the most recently received packet. Please verify it against the sensor model. Your confirmed selection will be preserved."
+        }
+      },
+      "replace_battery": {
+        "title": "Battery replacement / Reassign radio ID",
+        "description": "Select an existing sensor. The integration will search for a new radio ID while keeping the existing Home Assistant device and entities.",
+        "data": {
+          "sensor_key": "Existing sensor"
+        }
+      },
+      "replace_battery_scan": {
+        "title": "Detect new radio ID",
+        "description": "Selected sensor: {sensor_name} (current radio ID: {radio_id}). Remove and reinsert its batteries. The integration will look for newly received radio packets with the new-battery flag. Only packets received after starting the search will be considered.",
+        "data": {
+          "continue_scan": "Search again"
+        }
+      },
+      "replace_battery_confirm": {
+        "title": "Confirm new radio ID",
+        "description": "A possible new radio ID was detected for {sensor_name}. Current ID: {old_radio_id}. New ID: {new_radio_id}. Confirm only if you are certain this is the correct physical sensor.",
+        "data": {
+          "confirm": "Confirm reassignment"
+        }
+      },
+      "remove_sensor": {
+        "title": "Remove LaCrosse sensor",
+        "data": {
+          "sensor_key": "Sensor"
+        }
+      }
+    },
+    "error": {
+      "invalid_name": "Enter a valid device name.",
+      "name_exists": "A sensor with this name already exists.",
+      "radio_id_exists": "This radio ID is already configured.",
+      "no_new_radio_id": "No suitable new radio ID has been detected yet. Replace the batteries and try again.",
+      "multiple_radio_ids": "Multiple possible radio IDs were detected. The sensor cannot be assigned automatically.",
+      "sensor_not_found": "The selected sensor no longer exists.",
+      "radio_id_changed": "The sensor configuration has changed. Restart the reassignment."
+    },
+    "abort": {
+      "no_sensors": "No LaCrosse sensors are configured.",
+      "no_discovered_sensors": "No LaCrosse sensors have been received yet. Wait a moment or remove and reinsert the batteries in the sensor you want to discover.",
+      "sensor_already_configured": "This LaCrosse sensor is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "temperature": {
+        "name": "Temperature"
+      },
+      "humidity": {
+        "name": "Humidity"
+      }
+    },
+    "binary_sensor": {
+      "battery_low": {
+        "name": "Battery low"
+      }
+    }
+  }
+}
