@@ -166,6 +166,101 @@ class TestDiagnosticReceiver(unittest.TestCase):
             1,
         )
 
+    # ---------------------------------------------------------
+    # v0.3.0-beta.3 diagnostic regression tests
+    # ---------------------------------------------------------
+
+    def test_empty_telegram_is_not_logged(self):
+        """Serial timeouts must not generate debug messages."""
+
+        with patch.object(
+            module._LOGGER,
+            "debug",
+        ) as debug:
+            self.receive(b"")
+
+        debug.assert_not_called()
+        self.assertEqual(self.receiver.sensors, {})
+
+    def test_whitespace_telegram_is_not_logged(self):
+        """Whitespace-only telegrams must be ignored."""
+
+        with patch.object(
+            module._LOGGER,
+            "debug",
+        ) as debug:
+            self.receive(b"  \r\n")
+
+        debug.assert_not_called()
+        self.assertEqual(self.receiver.sensors, {})
+
+    def test_valid_telegram_has_raw_prefix(self):
+        """Valid telegrams must retain their raw diagnostic prefix."""
+
+        with patch.object(
+            module._LOGGER,
+            "isEnabledFor",
+            return_value=True,
+        ):
+            with patch.object(
+                module._LOGGER,
+                "debug",
+            ) as debug:
+                self.receive(b"OK 9 10 1 4 184 53\n")
+
+        debug.assert_called_once_with(
+            "JeeLink raw telegram: %r",
+            "OK 9 10 1 4 184 53",
+        )
+
+    def test_invalid_telegram_has_unrecognized_prefix(self):
+        """Unexpected telegrams must be identified in debug logs."""
+
+        with patch.object(
+            module._LOGGER,
+            "isEnabledFor",
+            return_value=True,
+        ):
+            with patch.object(
+                module._LOGGER,
+                "debug",
+            ) as debug:
+                self.receive(b"INVALID TELEGRAM\n")
+
+        debug.assert_called_once_with(
+            "JeeLink unrecognized telegram: %r",
+            "INVALID TELEGRAM",
+        )
+        self.assertEqual(self.receiver.sensors, {})
+
+    def test_sensor_id_55_is_not_filtered(self):
+        """Unknown sensor IDs must remain available for discovery."""
+
+        received = []
+
+        self.receiver._callback = (
+            lambda sensor, data: received.append(sensor.sensorid)
+        )
+
+        with patch.object(
+            module._LOGGER,
+            "isEnabledFor",
+            return_value=True,
+        ):
+            with patch.object(
+                module._LOGGER,
+                "debug",
+            ) as debug:
+                self.receive(b"OK 9 55 1 6 35 106\n")
+
+        self.assertIn(55, self.receiver.sensors)
+        self.assertEqual(received, [55])
+
+        debug.assert_called_once_with(
+            "JeeLink raw telegram: %r",
+            "OK 9 55 1 6 35 106",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
