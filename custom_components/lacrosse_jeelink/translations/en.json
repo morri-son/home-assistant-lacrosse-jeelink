@@ -37,7 +37,18 @@
           "add_sensor": "Add sensor manually",
           "scan_sensor": "Search for sensors",
           "replace_battery": "Battery replacement / Reassign radio ID",
-          "remove_sensor": "Remove sensor"
+          "remove_sensor": "Remove sensor",
+          "raw_telegram_diagnostics": "Raw telegram diagnostics"
+        }
+      },
+      "raw_telegram_diagnostics": {
+        "title": "Raw telegram diagnostics",
+        "description": "Enable diagnostics to inspect raw radio telegrams received by the JeeLink in the Home Assistant logs. Raw data is only logged when DEBUG logging is enabled. This feature helps investigate unknown or incorrect radio IDs.",
+        "data": {
+          "raw_telegram_diagnostics": "Enable raw telegram diagnostics"
+        },
+        "data_description": {
+          "raw_telegram_diagnostics": "Disabled by default. Changing this setting reloads the integration. To display raw telegrams, DEBUG logging must also be enabled for custom_components.lacrosse_jeelink.diagnostic_receiver."
         }
       },
       "add_sensor": {
