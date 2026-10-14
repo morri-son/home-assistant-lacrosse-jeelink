@@ -1,0 +1,39 @@
+
+name: JeeLink Parser Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "tests/**"
+      - ".github/workflows/parser-tests.yml"
+  pull_request:
+    paths:
+      - "tests/**"
+      - ".github/workflows/parser-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parser-tests:
+    name: Python Parser Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Run JeeLink parser tests
+        run: |
+          python -m unittest discover \
+            -s tests \
+            -p "test_*.py" \
+            -v
