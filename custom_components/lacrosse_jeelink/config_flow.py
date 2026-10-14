@@ -36,6 +36,7 @@ from .const import (
 
 CONF_HUMIDITY_MODE = "humidity_mode"
 HUMIDITY_MODE_MANUAL = "manual"
+CONF_RAW_TELEGRAM_DIAGNOSTICS = "raw_telegram_diagnostics"
 
 
 def _has_valid_humidity(humidity: int | None) -> bool:
@@ -187,7 +188,41 @@ class LaCrosseJeelinkOptionsFlow(OptionsFlowWithReload):
                 "scan_sensor",
                 "replace_battery",
                 "remove_sensor",
+                "raw_telegram_diagnostics",
             ],
+        )
+
+    async def async_step_raw_telegram_diagnostics(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> ConfigFlowResult:
+        """Enable or disable raw JeeLink telegram diagnostics."""
+
+        if user_input is not None:
+            return self.async_create_entry(
+                data={
+                    **self.config_entry.options,
+                    CONF_RAW_TELEGRAM_DIAGNOSTICS: user_input[
+                        CONF_RAW_TELEGRAM_DIAGNOSTICS
+                    ],
+                }
+            )
+
+        enabled = self.config_entry.options.get(
+            CONF_RAW_TELEGRAM_DIAGNOSTICS,
+            False,
+        ) is True
+
+        return self.async_show_form(
+            step_id="raw_telegram_diagnostics",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_RAW_TELEGRAM_DIAGNOSTICS,
+                        default=enabled,
+                    ): bool,
+                }
+            ),
         )
 
     async def async_step_add_sensor(
