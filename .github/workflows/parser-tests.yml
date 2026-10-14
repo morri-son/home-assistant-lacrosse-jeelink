@@ -36,6 +36,27 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install "pylacrosse>=0.4"
 
+      - name: Inspect installed pylacrosse
+        run: |
+          python - <<'PY'
+          import inspect
+          from importlib.metadata import version
+
+          import pylacrosse
+
+          print("===== PYLACROSSE VERSION =====")
+          print(version("pylacrosse"))
+
+          print("\n===== PYLACROSSE MODULE =====")
+          print(inspect.getfile(pylacrosse.LaCrosse))
+
+          print("\n===== LACROSSE _refresh =====")
+          print(inspect.getsource(pylacrosse.LaCrosse._refresh))
+
+          print("\n===== LACROSSE SENSOR CLASS =====")
+          print(inspect.getsource(pylacrosse.LaCrosseSensor))
+          PY
+
       - name: Run JeeLink parser tests
         run: |
           python -m unittest discover \
