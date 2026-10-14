@@ -37,7 +37,18 @@
           "add_sensor": "Sensor manuell hinzufügen",
           "scan_sensor": "Nach Sensoren suchen",
           "replace_battery": "Batteriewechsel / Funk-ID neu zuordnen",
-          "remove_sensor": "Sensor entfernen"
+          "remove_sensor": "Sensor entfernen",
+          "raw_telegram_diagnostics": "Rohtelegramm-Diagnose"
+        }
+      },
+      "raw_telegram_diagnostics": {
+        "title": "Rohtelegramm-Diagnose",
+        "description": "Aktiviere die Diagnose, um die vom JeeLink empfangenen Funktelegramme im Home-Assistant-Protokoll untersuchen zu können. Die Rohdaten werden nur bei aktiviertem DEBUG-Logging ausgegeben. Diese Funktion dient der Fehlersuche bei unbekannten oder fehlerhaften Funk-IDs.",
+        "data": {
+          "raw_telegram_diagnostics": "Rohtelegramm-Diagnose aktivieren"
+        },
+        "data_description": {
+          "raw_telegram_diagnostics": "Standardmäßig deaktiviert. Beim Ändern wird die Integration neu geladen. Für die Ausgabe der Rohtelegramme muss zusätzlich DEBUG-Logging für custom_components.lacrosse_jeelink.diagnostic_receiver aktiviert sein."
         }
       },
       "add_sensor": {
