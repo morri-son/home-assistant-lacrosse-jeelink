@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import logging
@@ -231,6 +232,12 @@ async def async_setup_entry(
 
     try:
         await hass.async_add_executor_job(lacrosse.open)
+        # The JeeLink firmware resets its UART on serial open. Sending init
+        # commands immediately after open() races with that reset and the
+        # commands are silently dropped, leaving the stick in power-on mode.
+        # FHEM's 00_JeeLink.pm sleeps at least 1.5s before sending
+        # initCommands; mirror that behaviour here.
+        await asyncio.sleep(1.5)
         # Initialize JeeLink after connect: pylacrosse.open() only opens the
         # serial port but never sends the LaCrosse init sequence. Without
         # these commands the stick stays in its power-on default mode and
