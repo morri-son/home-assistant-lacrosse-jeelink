@@ -231,6 +231,15 @@ async def async_setup_entry(
 
     try:
         await hass.async_add_executor_job(lacrosse.open)
+        # Initialize JeeLink after connect: pylacrosse.open() only opens the
+        # serial port but never sends the LaCrosse init sequence. Without
+        # these commands the stick stays in its power-on default mode and
+        # never reports sensor packets on the wire. The commands mirror the
+        # "0a 7m 10t" documention used by other JeeLink integrations:
+        # LED off, toggle mask 7 (all three datarate slots), 10s interval.
+        await hass.async_add_executor_job(lacrosse.led_mode_state, 0)
+        await hass.async_add_executor_job(lacrosse.set_toggle_mask, 7)
+        await hass.async_add_executor_job(lacrosse.set_toggle_interval, 10)
         await hass.async_add_executor_job(lacrosse.start_scan)
     except Exception as err:
         try:
